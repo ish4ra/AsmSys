@@ -16,7 +16,7 @@ AsmSys is in early development. It currently reads real system information direc
 - [x] Memory information
 - [x] Disk information
 - [x] Command-line flags
-- [ ] Cleaner terminal formatting
+- [x] Cleaner terminal formatting
 
 ## Requirements
 
@@ -90,6 +90,14 @@ A license will be added before the first stable release.
 ./asmsys --disk
 ./asmsys --all
 ./asmsys --help
+./asmsys --version
 ```
 
 Running `./asmsys` without an option displays the full system summary.
+
+
+## Development
+
+Every push and pull request to `main` is built automatically with GitHub Actions. The workflow assembles and links AsmSys, then runs basic command-line smoke tests.
+
+Current development version: `v0.1.0`

@@ -13,7 +13,7 @@ GLOBAL _start
 
 SECTION .data
     title db 10, 27, "[1;32m", "AsmSys", 27, "[0m", 10
-    title db "======", 10
+          db "======", 10
     title_len equ $ - title
     hostname_label db "Hostname     : "
     hostname_label_len equ $ - hostname_label

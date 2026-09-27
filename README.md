@@ -12,8 +12,8 @@ AsmSys is in early development. It currently reads real system information direc
 - [x] Kernel version
 - [x] Architecture
 - [x] System uptime
-- [ ] CPU information
-- [ ] Memory information
+- [x] CPU information
+- [x] Memory information
 - [ ] Disk information
 - [ ] Command-line flags
 - [ ] Cleaner terminal formatting
@@ -52,6 +52,8 @@ AsmSys
 Hostname     : my-linux-pc
 Kernel       : 6.x.x
 Architecture : x86_64
+CPU          : Example x86-64 Processor
+Memory       : 2048 MiB / 8192 MiB
 Uptime       : 2d 4h 17m
 ```
 
@@ -72,7 +74,7 @@ AsmSys/
 
 AsmSys does not use libc. The program starts at `_start` and communicates with Linux directly through x86-64 system calls.
 
-The current implementation uses `uname` for hostname, kernel and architecture information, and `sysinfo` for uptime.
+The current implementation uses `uname` for hostname, kernel and architecture information, reads the CPU model from `/proc/cpuinfo`, and uses `sysinfo` for memory and uptime.
 
 ## License
 

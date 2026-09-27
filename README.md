@@ -14,8 +14,8 @@ AsmSys is in early development. It currently reads real system information direc
 - [x] System uptime
 - [x] CPU information
 - [x] Memory information
-- [ ] Disk information
-- [ ] Command-line flags
+- [x] Disk information
+- [x] Command-line flags
 - [ ] Cleaner terminal formatting
 
 ## Requirements
@@ -54,6 +54,7 @@ Kernel       : 6.x.x
 Architecture : x86_64
 CPU          : Example x86-64 Processor
 Memory       : 2048 MiB / 8192 MiB
+Disk /       : 42 GiB / 120 GiB
 Uptime       : 2d 4h 17m
 ```
 
@@ -79,3 +80,16 @@ The current implementation uses `uname` for hostname, kernel and architecture in
 ## License
 
 A license will be added before the first stable release.
+
+
+## Command-line Options
+
+```text
+./asmsys --cpu
+./asmsys --memory
+./asmsys --disk
+./asmsys --all
+./asmsys --help
+```
+
+Running `./asmsys` without an option displays the full system summary.

@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install NASM
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Build
+        run: make
+
+      - name: Verify binary
+        run: |
+          ./asmsys --version
+          ./asmsys --all
+          file asmsys
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp asmsys dist/asmsys-linux-x86_64
+          chmod +x dist/asmsys-linux-x86_64
+          sha256sum dist/asmsys-linux-x86_64 > dist/asmsys-linux-x86_64.sha256
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/asmsys-linux-x86_64
+            dist/asmsys-linux-x86_64.sha256

@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install NASM
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Build
+        run: make
+
+      - name: Smoke test
+        run: |
+          ./asmsys --version
+          ./asmsys --help
+          ./asmsys --cpu
+          ./asmsys --memory
+          ./asmsys --disk
+          ./asmsys --all

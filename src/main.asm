@@ -12,7 +12,8 @@ GLOBAL _start
 %define STDOUT         1
 
 SECTION .data
-    title db "AsmSys", 10
+    title db 10, 27, "[1;32m", "AsmSys", 27, "[0m", 10
+    title db "======", 10
     title_len equ $ - title
     hostname_label db "Hostname     : "
     hostname_label_len equ $ - hostname_label
@@ -55,12 +56,17 @@ SECTION .data
     opt_all db "--all",0
     opt_help db "--help",0
     opt_help_short db "-h",0
+    opt_version db "--version",0
+    opt_version_short db "-v",0
+    version_text db "AsmSys v0.1.0",10
+    version_text_len equ $ - version_text
     help_text db "Usage: asmsys [OPTION]",10,10
               db "  --cpu       Show CPU information",10
               db "  --memory    Show memory information",10
               db "  --disk      Show root filesystem usage",10
               db "  --all       Show all system information",10
-              db "  --help, -h  Show this help",10
+              db "  --version, -v  Show version",10
+              db "  --help, -h     Show this help",10
     help_text_len equ $ - help_text
     invalid_text db "asmsys: unknown option",10
     invalid_text_len equ $ - invalid_text
@@ -102,6 +108,16 @@ _start:
     test rax,rax
     jnz show_all
     mov rdi,r15
+    mov rsi,opt_version
+    call streq
+    test rax,rax
+    jnz show_version
+    mov rdi,r15
+    mov rsi,opt_version_short
+    call streq
+    test rax,rax
+    jnz show_version
+    mov rdi,r15
     mov rsi,opt_help
     call streq
     test rax,rax
@@ -112,6 +128,13 @@ _start:
     test rax,rax
     jnz show_help
     jmp invalid_option
+
+show_version:
+    mov rsi,version_text
+    mov rdx,version_text_len
+    call print
+    xor rdi,rdi
+    jmp exit
 
 show_help:
     mov rsi,help_text

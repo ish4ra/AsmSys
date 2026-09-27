@@ -1,12 +1,11 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version (for example v0.1.0)"
-        required: true
-        default: "v0.1.0"
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
   push:
     tags:
       - "v*"
@@ -28,10 +27,10 @@ jobs:
         id: version
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-          else
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="v$(tr -d '[:space:]' < VERSION)"
           fi
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
             echo "Invalid version: $VERSION"
@@ -39,8 +38,8 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Create and push tag
-        if: github.event_name == 'workflow_dispatch'
+      - name: Create tag
+        if: startsWith(github.ref, 'refs/heads/')
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"

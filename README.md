@@ -4,7 +4,19 @@ A lightweight x86-64 Linux system information tool written entirely in NASM Asse
 
 ## Status
 
-AsmSys is in early development. The current version provides the initial NASM x86-64 program structure and build system.
+AsmSys is in early development. It currently reads real system information directly from the Linux kernel using x86-64 system calls.
+
+## Current Features
+
+- [x] Hostname
+- [x] Kernel version
+- [x] Architecture
+- [x] System uptime
+- [ ] CPU information
+- [ ] Memory information
+- [ ] Disk information
+- [ ] Command-line flags
+- [ ] Cleaner terminal formatting
 
 ## Requirements
 
@@ -33,20 +45,17 @@ Or:
 make run
 ```
 
-## Current Output
+## Example Output
 
-AsmSys currently identifies its target architecture, runtime approach, and implementation language.
+```text
+AsmSys
+Hostname     : my-linux-pc
+Kernel       : 6.x.x
+Architecture : x86_64
+Uptime       : 2d 4h 17m
+```
 
-## Roadmap
-
-- [ ] Hostname
-- [ ] OS and kernel information
-- [ ] CPU information
-- [ ] Memory information
-- [ ] System uptime
-- [ ] Disk information
-- [ ] Command-line flags
-- [ ] Cleaner terminal formatting
+Values are read from the machine running AsmSys.
 
 ## Project Structure
 
@@ -58,6 +67,12 @@ AsmSys/
 ├── .gitignore
 └── README.md
 ```
+
+## How It Works
+
+AsmSys does not use libc. The program starts at `_start` and communicates with Linux directly through x86-64 system calls.
+
+The current implementation uses `uname` for hostname, kernel and architecture information, and `sysinfo` for uptime.
 
 ## License
 

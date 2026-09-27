@@ -1,11 +1,14 @@
 BITS 64
 GLOBAL _start
 
-%define SYS_write    1
-%define SYS_uname   63
-%define SYS_sysinfo 99
-%define SYS_exit    60
-%define STDOUT       1
+%define SYS_read      0
+%define SYS_write     1
+%define SYS_open      2
+%define SYS_close     3
+%define SYS_uname    63
+%define SYS_sysinfo  99
+%define SYS_exit     60
+%define STDOUT        1
 
 SECTION .data
     title db "AsmSys", 10
@@ -19,6 +22,15 @@ SECTION .data
     arch_label_len equ $ - arch_label
     uptime_label db "Uptime       : "
     uptime_label_len equ $ - uptime_label
+    cpu_label db "CPU          : "
+    cpu_label_len equ $ - cpu_label
+    memory_label db "Memory       : "
+    memory_label_len equ $ - memory_label
+
+    cpuinfo_path db "/proc/cpuinfo", 0
+    model_key db "model name", 0
+    unknown_text db "Unknown", 10
+    unknown_text_len equ $ - unknown_text
 
     days_text db "d "
     days_text_len equ $ - days_text
@@ -26,14 +38,17 @@ SECTION .data
     hours_text_len equ $ - hours_text
     mins_text db "m", 10
     mins_text_len equ $ - mins_text
+
+    mib_text db " MiB / "
+    mib_text_len equ $ - mib_text
+    mib_end db " MiB", 10
+    mib_end_len equ $ - mib_end
     newline db 10
 
 SECTION .bss
-    ; struct utsname contains six 65-byte character arrays on Linux.
     utsbuf resb 390
-    ; struct sysinfo is larger than the fields used here. 128 bytes is ample
-    ; for the x86-64 Linux layout.
     sysinfo_buf resb 128
+    cpu_buf resb 8192
     numbuf resb 32
 
 SECTION .text
@@ -70,16 +85,52 @@ _start:
     call print_cstr
     call print_newline
 
+    mov rsi, cpu_label
+    mov rdx, cpu_label_len
+    call print
+    call print_cpu_model
+
     mov rax, SYS_sysinfo
     mov rdi, sysinfo_buf
     syscall
     test rax, rax
     js .exit_error
 
+    mov rsi, memory_label
+    mov rdx, memory_label_len
+    call print
+
+    ; Linux x86-64 struct sysinfo:
+    ; totalram @ 32, freeram @ 40, bufferram @ 56, mem_unit @ 104.
+    ; Display used as total - free - buffers.
+    mov eax, dword [sysinfo_buf + 104]
+    mov r8, rax
+    mov rax, [sysinfo_buf + 32]
+    imul rax, r8
+    mov r9, rax
+    mov rax, [sysinfo_buf + 40]
+    imul rax, r8
+    mov r10, rax
+    mov rax, [sysinfo_buf + 56]
+    imul rax, r8
+    add r10, rax
+    mov rax, r9
+    sub rax, r10
+    shr rax, 20
+    call print_uint
+    mov rsi, mib_text
+    mov rdx, mib_text_len
+    call print
+    mov rax, r9
+    shr rax, 20
+    call print_uint
+    mov rsi, mib_end
+    mov rdx, mib_end_len
+    call print
+
     mov rsi, uptime_label
     mov rdx, uptime_label_len
     call print
-
     mov rax, [sysinfo_buf]
     xor rdx, rdx
     mov rcx, 86400
@@ -118,7 +169,101 @@ _start:
     mov rax, SYS_exit
     syscall
 
-; write(STDOUT, rsi, rdx)
+; Read /proc/cpuinfo and print the first model name value.
+print_cpu_model:
+    mov rax, SYS_open
+    mov rdi, cpuinfo_path
+    xor rsi, rsi
+    xor rdx, rdx
+    syscall
+    test rax, rax
+    js .unknown
+    mov r12, rax
+
+    mov rax, SYS_read
+    mov rdi, r12
+    mov rsi, cpu_buf
+    mov rdx, 8191
+    syscall
+    test rax, rax
+    jle .close_unknown
+    mov r13, rax
+    mov byte [cpu_buf + r13], 0
+
+    mov rax, SYS_close
+    mov rdi, r12
+    syscall
+
+    mov rsi, cpu_buf
+    mov rcx, r13
+.search:
+    cmp rcx, 10
+    jb .unknown
+    cmp byte [rsi], 'm'
+    jne .next
+    cmp byte [rsi+1], 'o'
+    jne .next
+    cmp byte [rsi+2], 'd'
+    jne .next
+    cmp byte [rsi+3], 'e'
+    jne .next
+    cmp byte [rsi+4], 'l'
+    jne .next
+    cmp byte [rsi+5], ' '
+    jne .next
+    cmp byte [rsi+6], 'n'
+    jne .next
+    cmp byte [rsi+7], 'a'
+    jne .next
+    cmp byte [rsi+8], 'm'
+    jne .next
+    cmp byte [rsi+9], 'e'
+    jne .next
+
+.find_colon:
+    cmp byte [rsi], 0
+    je .unknown
+    cmp byte [rsi], ':'
+    je .value
+    inc rsi
+    jmp .find_colon
+.value:
+    inc rsi
+.skip_space:
+    cmp byte [rsi], ' '
+    jne .print_value
+    inc rsi
+    jmp .skip_space
+.print_value:
+    mov rdi, rsi
+    xor rdx, rdx
+.value_len:
+    cmp byte [rdi + rdx], 10
+    je .have_len
+    cmp byte [rdi + rdx], 0
+    je .have_len
+    inc rdx
+    jmp .value_len
+.have_len:
+    mov rsi, rdi
+    call print
+    call print_newline
+    ret
+
+.next:
+    inc rsi
+    dec rcx
+    jmp .search
+
+.close_unknown:
+    mov rax, SYS_close
+    mov rdi, r12
+    syscall
+.unknown:
+    mov rsi, unknown_text
+    mov rdx, unknown_text_len
+    jmp print
+
 print:
     mov rax, SYS_write
     mov rdi, STDOUT
@@ -130,7 +275,6 @@ print_newline:
     mov rdx, 1
     jmp print
 
-; Print a zero-terminated string at RSI.
 print_cstr:
     push rsi
     xor rdx, rdx
@@ -143,7 +287,6 @@ print_cstr:
     pop rsi
     jmp print
 
-; Print unsigned integer in RAX.
 print_uint:
     lea rsi, [numbuf + 31]
     xor rcx, rcx
